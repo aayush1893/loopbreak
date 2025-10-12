@@ -1,0 +1,26 @@
+{
+  "name": "LoopBreak — CalmReceipt",
+  "short_name": "LoopBreak",
+  "description": "Stop rumination loops in 3 taps. Track your RRT.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#F8FAFB",
+  "theme_color": "#4A90E2",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/placeholder.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/placeholder.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["health", "lifestyle", "productivity"],
+  "screenshots": []
+}
