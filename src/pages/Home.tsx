@@ -69,7 +69,13 @@ export default function Home() {
         </div>
 
         {/* Footer Links */}
-        <div className="mt-12 text-center">
+        <div className="mt-12 flex justify-center gap-6">
+          <button
+            onClick={() => navigate('/tutorial')}
+            className="text-sm text-muted-foreground underline hover:text-foreground"
+          >
+            How to Use
+          </button>
           <button
             onClick={() => navigate('/privacy')}
             className="text-sm text-muted-foreground underline hover:text-foreground"
