@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Slider } from '@/components/ui/slider';
 import { PrecisionTimer } from '@/lib/timer';
 import { saveReceipt } from '@/lib/db';
-import { URGE_MIN, URGE_MAX, MAX_NOTE_LENGTH } from '@/lib/constants';
+import { URGE_MIN, URGE_MAX, MAX_NOTE_LENGTH, PILOT_FORM_URL } from '@/lib/constants';
 import { ArrowLeft, Mountain, Brain, Zap } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { Lane, CalmReceipt } from '@/types/calm-receipt';
@@ -84,6 +84,12 @@ export default function Loop() {
         title: 'CalmReceipt saved!',
         description: `RRT: ${rrtSec}s • Lane: ${selectedLane}`,
       });
+
+      // Check auto-open pilot form setting
+      const auto = localStorage.getItem('loopbreak_autoOpenPilot') === 'true';
+      if (auto) {
+        window.open(PILOT_FORM_URL, '_blank');
+      }
 
       // Reset and return to home
       setTimeout(() => {

@@ -66,3 +66,5 @@ export const LANE_SOFT_TIMER_MS = 120000; // 120 seconds
 export const MAX_NOTE_LENGTH = 80;
 export const URGE_MIN = 0;
 export const URGE_MAX = 10;
+
+export const PILOT_FORM_URL = 'https://forms.google.com/your-pilot-form'; // Replace with actual form URL

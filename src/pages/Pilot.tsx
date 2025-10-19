@@ -4,9 +4,9 @@ import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { QRCodeSVG } from 'qrcode.react';
 import { ArrowLeft, ExternalLink, QrCode, Mountain, Brain, Zap } from 'lucide-react';
+import { PILOT_FORM_URL } from '@/lib/constants';
 import type { Lane } from '@/types/calm-receipt';
 
-const PILOT_FORM_URL = 'https://forms.google.com/your-pilot-form'; // Replace with actual URL
 const APP_ORIGIN = window.location.origin;
 
 export default function Pilot() {
@@ -15,16 +15,13 @@ export default function Pilot() {
   const [selectedQR, setSelectedQR] = useState<Lane | null>(null);
 
   useEffect(() => {
-    // Load auto-open preference
-    const saved = localStorage.getItem('loopbreak_auto_open_form');
-    if (saved) {
-      setAutoOpenForm(JSON.parse(saved));
-    }
+    const v = localStorage.getItem('loopbreak_autoOpenPilot');
+    if (v) setAutoOpenForm(v === 'true');
   }, []);
 
-  const handleToggleAutoOpen = (checked: boolean) => {
-    setAutoOpenForm(checked);
-    localStorage.setItem('loopbreak_auto_open_form', JSON.stringify(checked));
+  const handleToggleAutoOpen = (val: boolean) => {
+    setAutoOpenForm(val);
+    localStorage.setItem('loopbreak_autoOpenPilot', String(val));
   };
 
   const handleContribute = () => {

@@ -204,6 +204,11 @@ export default function Receipts() {
                     </div>
                   </div>
 
+                  <div className="mb-3 text-sm">
+                    <div className="text-muted-foreground">Episode ID</div>
+                    <div className="font-mono text-sm break-all">{selectedReceipt.id}</div>
+                  </div>
+
                   {selectedReceipt.urgeBefore !== null && (
                     <div className="mb-3 grid grid-cols-2 gap-4 text-sm">
                       <div>
