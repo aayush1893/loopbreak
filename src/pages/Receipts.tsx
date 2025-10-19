@@ -1,11 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { ReceiptCard } from '@/components/ReceiptCard';
 import { getAllReceipts, deleteReceipt, downloadCSV } from '@/lib/db';
-import { ArrowLeft, Download, Trash2, FileText } from 'lucide-react';
+import { ArrowLeft, Download, Trash2, FileText, Image, FileDown } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { CalmReceipt } from '@/types/calm-receipt';
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
 import {
   Dialog,
   DialogContent,
@@ -14,12 +16,32 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 
+async function exportReceiptAsPNG(node: HTMLElement, filename = "calm-receipt.png") {
+  const canvas = await html2canvas(node, { backgroundColor: null, scale: 2 });
+  const link = document.createElement("a");
+  link.download = filename;
+  link.href = canvas.toDataURL("image/png");
+  link.click();
+}
+
+async function exportReceiptAsPDF(node: HTMLElement, filename = "calm-receipt.pdf") {
+  const canvas = await html2canvas(node, { backgroundColor: "#ffffff", scale: 2 });
+  const img = canvas.toDataURL("image/png");
+  const pdf = new jsPDF({ unit: "pt", format: "a4" });
+  const w = pdf.internal.pageSize.getWidth();
+  const h = pdf.internal.pageSize.getHeight();
+  const ratio = Math.min(w / canvas.width, h / canvas.height);
+  pdf.addImage(img, "PNG", (w - canvas.width * ratio) / 2, 40, canvas.width * ratio, canvas.height * ratio);
+  pdf.save(filename);
+}
+
 export default function Receipts() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [receipts, setReceipts] = useState<CalmReceipt[]>([]);
   const [selectedReceipt, setSelectedReceipt] = useState<CalmReceipt | null>(null);
   const [loading, setLoading] = useState(true);
+  const detailRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     loadReceipts();
@@ -73,6 +95,40 @@ export default function Receipts() {
       title: 'CSV exported',
       description: `${receipts.length} receipts exported`,
     });
+  };
+
+  const handleExportPNG = async () => {
+    if (!detailRef.current || !selectedReceipt) return;
+    try {
+      const filename = `calm-receipt-${new Date(selectedReceipt.tsStart).toISOString().split('T')[0]}.png`;
+      await exportReceiptAsPNG(detailRef.current, filename);
+      toast({
+        title: 'Receipt exported as PNG',
+      });
+    } catch (error) {
+      console.error('Error exporting PNG:', error);
+      toast({
+        title: 'Error exporting PNG',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleExportPDF = async () => {
+    if (!detailRef.current || !selectedReceipt) return;
+    try {
+      const filename = `calm-receipt-${new Date(selectedReceipt.tsStart).toISOString().split('T')[0]}.pdf`;
+      await exportReceiptAsPDF(detailRef.current, filename);
+      toast({
+        title: 'Receipt exported as PDF',
+      });
+    } catch (error) {
+      console.error('Error exporting PDF:', error);
+      toast({
+        title: 'Error exporting PDF',
+        variant: 'destructive',
+      });
+    }
   };
 
   if (loading) {
@@ -136,7 +192,7 @@ export default function Receipts() {
 
             {selectedReceipt && (
               <div className="space-y-4">
-                <div className="rounded-lg bg-muted/50 p-4">
+                <div ref={detailRef} className="rounded-lg bg-muted/50 p-4">
                   <div className="mb-3 grid grid-cols-2 gap-4 text-sm">
                     <div>
                       <div className="text-muted-foreground">Lane</div>
@@ -167,6 +223,17 @@ export default function Receipts() {
                       <div className="italic">"{selectedReceipt.note}"</div>
                     </div>
                   )}
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <Button variant="outline" onClick={handleExportPNG}>
+                    <Image className="mr-2 h-4 w-4" />
+                    Export PNG
+                  </Button>
+                  <Button variant="outline" onClick={handleExportPDF}>
+                    <FileDown className="mr-2 h-4 w-4" />
+                    Export PDF
+                  </Button>
                 </div>
 
                 <Button
