@@ -1,10 +1,35 @@
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { SafetyBanner } from '@/components/SafetyBanner';
-import { Play, FileText, BarChart3, TestTube2 } from 'lucide-react';
+import { promptInstall } from '@/lib/pwa';
+import { Play, FileText, BarChart3, TestTube2, Download } from 'lucide-react';
 
 export default function Home() {
   const navigate = useNavigate();
+  const [canInstall, setCanInstall] = useState(false);
+
+  useEffect(() => {
+    // Check if app is already installed
+    const isInstalled = window.matchMedia('(display-mode: standalone)').matches;
+    
+    // Listen for install prompt
+    const handler = () => setCanInstall(true);
+    window.addEventListener('beforeinstallprompt', handler);
+    
+    if (!isInstalled) {
+      setCanInstall(true);
+    }
+    
+    return () => window.removeEventListener('beforeinstallprompt', handler);
+  }, []);
+
+  const handleInstall = async () => {
+    const installed = await promptInstall();
+    if (installed) {
+      setCanInstall(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -66,6 +91,18 @@ export default function Home() {
             <TestTube2 className="mr-3" />
             Pilot Program
           </Button>
+
+          {canInstall && (
+            <Button
+              size="lg"
+              variant="secondary"
+              className="w-full"
+              onClick={handleInstall}
+            >
+              <Download className="mr-3" />
+              Install App
+            </Button>
+          )}
         </div>
 
         {/* Footer Links */}

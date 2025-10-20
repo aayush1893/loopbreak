@@ -59,6 +59,9 @@ export default function Loop() {
   };
 
   const handleCalmNow = () => {
+    // Haptic feedback
+    if (navigator.vibrate) navigator.vibrate(30);
+    
     timerRef.current.stop();
     setShowUrgeForm(true);
   };
