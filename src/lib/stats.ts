@@ -86,3 +86,17 @@ export function getToday(): Date {
   date.setHours(23, 59, 59, 999);
   return date;
 }
+
+export function getLaneMedian(receipts: CalmReceipt[], lane: Lane): number {
+  const secs = receipts.filter(r => r.lane === lane).map(r => r.rrtSec).sort((a, b) => a - b);
+  if (!secs.length) return Number.POSITIVE_INFINITY;
+  const m = Math.floor(secs.length / 2);
+  return secs.length % 2 ? secs[m] : Math.round((secs[m - 1] + secs[m]) / 2);
+}
+
+export function getBestLane(receipts: CalmReceipt[]): Lane {
+  const lanes: Lane[] = ['ground', 'reframe', 'act'];
+  return lanes
+    .map(l => [l, getLaneMedian(receipts, l)] as const)
+    .sort((a, b) => a[1] - b[1])[0][0];
+}

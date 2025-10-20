@@ -136,11 +136,26 @@ export default function Pilot() {
               </p>
 
               <Button onClick={handlePrintQRs} variant="outline">
-                Print Card
+                Print 12-Card Sheet
               </Button>
             </div>
           )}
         </div>
+
+        {/* Print Area - 12-card grid */}
+        {selectedQR && (
+          <div className="print-area hidden">
+            <div className="grid grid-cols-3 gap-12 p-12">
+              {Array.from({ length: 12 }).map((_, i) => (
+                <div key={i} className="flex flex-col items-center justify-center border p-6">
+                  <QRCodeSVG value={generateQRUrl(selectedQR)} size={140} />
+                  <div className="mt-2 text-sm font-medium capitalize">{selectedQR} lane</div>
+                  <div className="text-xs text-muted-foreground">{generateQRUrl(selectedQR)}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Print Styles */}
         <style>{`
@@ -148,14 +163,19 @@ export default function Pilot() {
             body * {
               visibility: hidden;
             }
-            .print-section,
-            .print-section * {
+            .print-area,
+            .print-area * {
               visibility: visible;
             }
-            .print-section {
+            .print-area {
               position: absolute;
               left: 0;
               top: 0;
+              width: 100%;
+            }
+            @page {
+              size: A4;
+              margin: 0;
             }
           }
         `}</style>

@@ -9,9 +9,10 @@ import { ActLane } from '@/components/ActLane';
 import { Input } from '@/components/ui/input';
 import { Slider } from '@/components/ui/slider';
 import { PrecisionTimer } from '@/lib/timer';
-import { saveReceipt } from '@/lib/db';
+import { saveReceipt, getAllReceipts } from '@/lib/db';
+import { getBestLane } from '@/lib/stats';
 import { URGE_MIN, URGE_MAX, MAX_NOTE_LENGTH, PILOT_FORM_URL } from '@/lib/constants';
-import { ArrowLeft, Mountain, Brain, Zap } from 'lucide-react';
+import { ArrowLeft, Mountain, Brain, Zap, Sparkles } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { Lane, CalmReceipt } from '@/types/calm-receipt';
 
@@ -23,6 +24,7 @@ export default function Loop() {
   const [started, setStarted] = useState(false);
   const [selectedLane, setSelectedLane] = useState<Lane | null>(null);
   const [showUrgeForm, setShowUrgeForm] = useState(false);
+  const [pastReceipts, setPastReceipts] = useState<CalmReceipt[]>([]);
   
   const [urgeBefore, setUrgeBefore] = useState<number | null>(null);
   const [urgeAfter, setUrgeAfter] = useState<number>(5);
@@ -32,6 +34,9 @@ export default function Loop() {
   const startTimeRef = useRef<number | null>(null);
 
   useEffect(() => {
+    // Load past receipts for Auto lane
+    getAllReceipts().then(setPastReceipts).catch(console.error);
+
     // Check for deep link lane parameter
     const laneParam = searchParams.get('lane');
     if (laneParam && ['ground', 'reframe', 'act'].includes(laneParam)) {
@@ -250,6 +255,20 @@ export default function Loop() {
               <div className="text-left">
                 <div className="font-bold">Act</div>
                 <div className="text-sm opacity-90">2-minute micro-action</div>
+              </div>
+            </Button>
+
+            <Button
+              size="xl"
+              variant="outline"
+              className="w-full"
+              onClick={() => handleLaneSelect(getBestLane(pastReceipts))}
+              disabled={pastReceipts.length === 0}
+            >
+              <Sparkles className="mr-3" />
+              <div className="text-left">
+                <div className="font-bold">Auto</div>
+                <div className="text-sm opacity-90">Your fastest lane</div>
               </div>
             </Button>
           </div>
