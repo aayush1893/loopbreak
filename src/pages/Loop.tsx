@@ -11,7 +11,7 @@ import { Slider } from '@/components/ui/slider';
 import { PrecisionTimer } from '@/lib/timer';
 import { saveReceipt, getAllReceipts } from '@/lib/db';
 import { getBestLane } from '@/lib/stats';
-import { URGE_MIN, URGE_MAX, MAX_NOTE_LENGTH, PILOT_FORM_URL } from '@/lib/constants';
+import * as constants from '@/lib/constants';
 import { ArrowLeft, Mountain, Brain, Zap, Sparkles } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { Lane, CalmReceipt } from '@/types/calm-receipt';
@@ -93,7 +93,7 @@ export default function Loop() {
       // Check auto-open pilot form setting
       const auto = localStorage.getItem('loopbreak_autoOpenPilot') === 'true';
       if (auto) {
-        window.open(PILOT_FORM_URL, '_blank');
+        window.open(constants.PILOT_FORM_URL, '_blank');
       }
 
       // Reset and return to home
@@ -128,8 +128,8 @@ export default function Loop() {
                   <Slider
                     value={urgeBefore !== null ? [urgeBefore] : [5]}
                     onValueChange={([value]) => setUrgeBefore(value)}
-                    min={URGE_MIN}
-                    max={URGE_MAX}
+                    min={constants.URGE_MIN}
+                    max={constants.URGE_MAX}
                     step={1}
                     className="flex-1"
                   />
@@ -152,8 +152,8 @@ export default function Loop() {
                   <Slider
                     value={[urgeAfter]}
                     onValueChange={([value]) => setUrgeAfter(value)}
-                    min={URGE_MIN}
-                    max={URGE_MAX}
+                    min={constants.URGE_MIN}
+                    max={constants.URGE_MAX}
                     step={1}
                     className="flex-1"
                   />
@@ -172,16 +172,16 @@ export default function Loop() {
                 <label className="mb-2 block text-sm font-medium">
                   Add a tiny note? (optional)
                 </label>
-                <Input
-                  value={note}
-                  onChange={(e) => setNote(e.target.value.slice(0, MAX_NOTE_LENGTH))}
-                  placeholder="What helped most?"
-                  maxLength={MAX_NOTE_LENGTH}
-                  className="h-12 text-base"
-                />
-                <p className="mt-1 text-xs text-muted-foreground">
-                  {note.length}/{MAX_NOTE_LENGTH}
-                </p>
+                  <Input
+                    value={note}
+                    onChange={(e) => setNote(e.target.value.slice(0, constants.MAX_NOTE_LENGTH))}
+                    placeholder="What helped most?"
+                    maxLength={constants.MAX_NOTE_LENGTH}
+                    className="h-12 text-base"
+                  />
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {note.length}/{constants.MAX_NOTE_LENGTH}
+                  </p>
               </div>
             </div>
 

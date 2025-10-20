@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { QRCodeSVG } from 'qrcode.react';
 import { ArrowLeft, ExternalLink, QrCode, Mountain, Brain, Zap } from 'lucide-react';
-import { PILOT_FORM_URL } from '@/lib/constants';
+import * as constants from '@/lib/constants';
 import type { Lane } from '@/types/calm-receipt';
 
 const APP_ORIGIN = window.location.origin;
@@ -25,7 +25,7 @@ export default function Pilot() {
   };
 
   const handleContribute = () => {
-    window.open(PILOT_FORM_URL, '_blank', 'noopener,noreferrer');
+    window.open(constants.PILOT_FORM_URL, '_blank', 'noopener,noreferrer');
   };
 
   const generateQRUrl = (lane: Lane) => {
