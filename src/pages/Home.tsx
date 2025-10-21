@@ -1,133 +1,95 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { SafetyBanner } from '@/components/SafetyBanner';
 import { promptInstall } from '@/lib/pwa';
-import { Play, FileText, BarChart3, TestTube2, Download } from 'lucide-react';
+import { getAllReceipts } from '@/lib/db';
+import { formatTime } from '@/lib/timer';
+import { PRIVACY_MESSAGE } from '@/lib/constants';
+import { Play, BarChart3, Download, Lock, TrendingDown } from 'lucide-react';
+import type { ResetSession } from '@/types/calm-receipt';
 
 export default function Home() {
   const navigate = useNavigate();
   const [canInstall, setCanInstall] = useState(false);
+  const [recentSessions, setRecentSessions] = useState<ResetSession[]>([]);
+  const [avgTm, setAvgTm] = useState<number | null>(null);
 
   useEffect(() => {
-    // Check if app is already installed
     const isInstalled = window.matchMedia('(display-mode: standalone)').matches;
-    
-    // Listen for install prompt
     const handler = () => setCanInstall(true);
     window.addEventListener('beforeinstallprompt', handler);
-    
-    if (!isInstalled) {
-      setCanInstall(true);
-    }
-    
+    if (!isInstalled) setCanInstall(true);
+    loadRecentSessions();
     return () => window.removeEventListener('beforeinstallprompt', handler);
   }, []);
 
+  const loadRecentSessions = async () => {
+    try {
+      const all = await getAllReceipts();
+      const calmerSessions = all.filter(s => s.feltCalmer).slice(-7);
+      setRecentSessions(calmerSessions);
+      if (calmerSessions.length > 0) {
+        const avg = calmerSessions.reduce((sum, s) => sum + s.tmSec, 0) / calmerSessions.length;
+        setAvgTm(Math.round(avg));
+      }
+    } catch (error) {
+      console.error('Error loading sessions:', error);
+    }
+  };
+
   const handleInstall = async () => {
     const installed = await promptInstall();
-    if (installed) {
-      setCanInstall(false);
-    }
+    if (installed) setCanInstall(false);
   };
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="container mx-auto max-w-2xl px-4 py-12">
-        {/* Header */}
-        <div className="mb-12 text-center">
-          <h1 className="mb-3 text-4xl font-bold text-foreground">
-            LoopBreak
-          </h1>
-          <p className="text-lg text-muted-foreground">
-            Stop rumination loops in 3 taps
-          </p>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Track your <strong>RRT</strong> (Rumination Recovery Time)
-          </p>
+      <div className="container mx-auto max-w-2xl px-4 py-12 space-y-8">
+        <div className="text-center space-y-3">
+          <h1 className="text-4xl font-bold tracking-tight">Thought Reset Timer</h1>
+          <p className="text-lg text-muted-foreground">Measure and reduce your rumination time (tₘ)</p>
         </div>
 
-        {/* Safety Banner */}
-        <SafetyBanner />
+        {avgTm !== null && (
+          <div className="rounded-lg border bg-card p-6 shadow-sm text-center space-y-2">
+            <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+              <TrendingDown className="h-4 w-4" />
+              <span>Your average reset time</span>
+            </div>
+            <div className="text-5xl font-bold text-primary tabular-nums">{formatTime(avgTm * 1000)}</div>
+            <p className="text-sm text-muted-foreground">Based on last {recentSessions.length} reset{recentSessions.length !== 1 ? 's' : ''}</p>
+          </div>
+        )}
 
-        {/* Main Actions */}
-        <div className="space-y-4">
-          <Button
-            size="xl"
-            variant="action"
-            className="w-full"
-            onClick={() => navigate('/loop')}
-          >
-            <Play className="mr-3" />
-            Start Loop
-          </Button>
+        <Button size="xl" className="w-full h-24 text-2xl shadow-lg hover:shadow-xl transition-shadow" onClick={() => navigate('/reset')}>
+          <Play className="mr-3 h-8 w-8" />
+          Start Reset
+        </Button>
 
-          <Button
-            size="lg"
-            variant="default"
-            className="w-full"
-            onClick={() => navigate('/receipts')}
-          >
-            <FileText className="mr-3" />
-            My CalmReceipts
-          </Button>
+        <p className="text-center text-sm text-muted-foreground italic">90-second guided cycle to interrupt thought loops</p>
 
-          <Button
-            size="lg"
-            variant="default"
-            className="w-full"
-            onClick={() => navigate('/stats')}
-          >
+        <div className="space-y-3">
+          <Button size="lg" variant="outline" className="w-full" onClick={() => navigate('/stats')}>
             <BarChart3 className="mr-3" />
-            Stats
+            View Progress
           </Button>
-
-          <Button
-            size="lg"
-            variant="outline"
-            className="w-full"
-            onClick={() => navigate('/pilot')}
-          >
-            <TestTube2 className="mr-3" />
-            Pilot Program
-          </Button>
-
           {canInstall && (
-            <Button
-              size="lg"
-              variant="secondary"
-              className="w-full"
-              onClick={handleInstall}
-            >
+            <Button size="lg" variant="outline" className="w-full" onClick={handleInstall}>
               <Download className="mr-3" />
               Install App
             </Button>
           )}
         </div>
 
-        {/* Footer Links */}
-        <div className="mt-12 flex justify-center gap-6">
-          <button
-            onClick={() => navigate('/tutorial')}
-            className="text-sm text-muted-foreground underline hover:text-foreground"
-          >
-            How to Use
-          </button>
-          <button
-            onClick={() => navigate('/privacy')}
-            className="text-sm text-muted-foreground underline hover:text-foreground"
-          >
-            Privacy Policy
-          </button>
+        <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+          <Lock className="h-4 w-4" />
+          <span>{PRIVACY_MESSAGE}</span>
         </div>
 
-        {/* Info Box */}
-        <div className="mt-8 rounded-lg bg-muted/50 p-6">
-          <h2 className="mb-2 text-lg font-semibold">What is RRT?</h2>
-          <p className="text-sm text-muted-foreground">
-            Rumination Recovery Time measures how long it takes you to break a rumination loop
-            using grounding, reframing, or action techniques. Track your progress and find what works best.
-          </p>
+        <div className="flex justify-center gap-4 text-sm text-muted-foreground">
+          <button onClick={() => navigate('/tutorial')} className="hover:underline">How it works</button>
+          <span>•</span>
+          <button onClick={() => navigate('/privacy')} className="hover:underline">Privacy</button>
         </div>
       </div>
     </div>

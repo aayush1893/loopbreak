@@ -1,5 +1,5 @@
 import { openDB, DBSchema, IDBPDatabase } from 'idb';
-import type { CalmReceipt } from '@/types/calm-receipt';
+import type { CalmReceipt, ResetSession } from '@/types/calm-receipt';
 
 interface LoopBreakDB extends DBSchema {
   receipts: {
@@ -104,19 +104,15 @@ function getReceiptsFromLocalStorage(): CalmReceipt[] {
 }
 
 // Export data as CSV
-export function exportToCSV(receipts: CalmReceipt[]): string {
-  const headers = ['ID', 'Start Time', 'End Time', 'Lane', 'RRT (sec)', 'Urge Before', 'Urge After', 'Urge Delta', 'Note'];
-  const rows = receipts.map(r => [
+export function exportToCSV(sessions: ResetSession[]): string {
+  const headers = ['ID', 'Start Time', 'End Time', 'tₘ (sec)', 'Completed Cycle', 'Felt Calmer', 'Note'];
+  const rows = sessions.map(r => [
     r.id,
     new Date(r.tsStart).toISOString(),
     new Date(r.tsEnd).toISOString(),
-    r.lane,
-    r.rrtSec.toString(),
-    r.urgeBefore?.toString() ?? '',
-    r.urgeAfter?.toString() ?? '',
-    (r.urgeBefore !== null && r.urgeAfter !== null) 
-      ? (r.urgeBefore - r.urgeAfter).toString() 
-      : '',
+    r.tmSec.toString(),
+    r.completedCycle ? 'Yes' : 'No',
+    r.feltCalmer ? 'Yes' : 'No',
     r.note ?? ''
   ]);
 
@@ -126,8 +122,8 @@ export function exportToCSV(receipts: CalmReceipt[]): string {
   ].join('\n');
 }
 
-export function downloadCSV(receipts: CalmReceipt[], filename: string = 'calm-receipts.csv'): void {
-  const csv = exportToCSV(receipts);
+export function downloadCSV(sessions: ResetSession[], filename: string = 'reset-sessions.csv'): void {
+  const csv = exportToCSV(sessions);
   const blob = new Blob([csv], { type: 'text/csv' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');

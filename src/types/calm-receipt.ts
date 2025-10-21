@@ -1,45 +1,16 @@
-export type Lane = 'ground' | 'reframe' | 'act';
+export type ResetStep = 'cognitive' | 'sensory' | 'breathing';
 
-export type CognitiveDistortion = 
-  | 'catastrophizing'
-  | 'all-or-nothing'
-  | 'mind-reading'
-  | 'shoulds'
-  | 'personalization'
-  | 'overgeneralizing';
-
-export type MicroAct = 
-  | 'sip-water'
-  | 'open-window'
-  | 'walk-to-sink'
-  | 'name-colors'
-  | 'shoulder-roll'
-  | 'pet-texture';
-
-export interface CalmReceipt {
+export interface ResetSession {
   id: string;
-  tsStart: number;
-  tsEnd: number;
-  lane: Lane;
-  rrtSec: number;
-  urgeBefore: number | null;
-  urgeAfter: number | null;
-  note?: string;
+  tsStart: number;        // When user pressed "Start Reset"
+  tsEnd: number;          // When user confirmed they feel calmer
+  tmSec: number;          // Total rumination time (time-to-mental-reset)
+  completedCycle: boolean; // Did they complete the 90s cycle?
+  feltCalmer: boolean;    // Did they feel calmer after?
+  note?: string;          // Optional note (max 80 chars)
   version: 1;
 }
 
-export interface GroundingStep {
-  id: number;
-  text: string;
-  completed: boolean;
-}
-
-export interface ReframeData {
-  distortion: CognitiveDistortion | null;
-  counterthought: string;
-}
-
-export interface ActData {
-  action: MicroAct | null;
-  startTime: number | null;
-}
+// Legacy type alias for backwards compatibility during migration
+export type CalmReceipt = ResetSession;
+export type Lane = 'ground' | 'reframe' | 'act';

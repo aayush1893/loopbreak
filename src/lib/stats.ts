@@ -1,66 +1,67 @@
-import type { CalmReceipt, Lane } from '@/types/calm-receipt';
+import type { ResetSession } from '@/types/calm-receipt';
 
 export interface Stats {
-  medianRRT: number;
-  percentUnder180: number;
-  avgUrgeDrop: number;
-  laneCount: Record<Lane, number>;
-  totalReceipts: number;
-  laneMedianRRT: Record<Lane, number>;
+  avgTm: number;           // Average time-to-mental-reset (seconds)
+  medianTm: number;        // Median tₘ
+  totalSessions: number;   // Total reset sessions
+  successRate: number;     // % that felt calmer
+  completionRate: number;  // % that completed 90s cycle
+  trend: number;           // % change from previous period
 }
 
-export function calculateStats(receipts: CalmReceipt[]): Stats {
-  if (receipts.length === 0) {
+export function calculateStats(sessions: ResetSession[]): Stats {
+  if (sessions.length === 0) {
     return {
-      medianRRT: 0,
-      percentUnder180: 0,
-      avgUrgeDrop: 0,
-      laneCount: { ground: 0, reframe: 0, act: 0 },
-      totalReceipts: 0,
-      laneMedianRRT: { ground: 0, reframe: 0, act: 0 },
+      avgTm: 0,
+      medianTm: 0,
+      totalSessions: 0,
+      successRate: 0,
+      completionRate: 0,
+      trend: 0,
     };
   }
 
-  // Sort RRTs for median calculation
-  const rrts = receipts.map(r => r.rrtSec).sort((a, b) => a - b);
-  const medianRRT = getMedian(rrts);
+  // Filter to successful sessions (felt calmer)
+  const calmerSessions = sessions.filter(s => s.feltCalmer);
+  const tmValues = calmerSessions.map(s => s.tmSec).sort((a, b) => a - b);
 
-  // Calculate percent under 180 seconds (3 minutes)
-  const under180 = receipts.filter(r => r.rrtSec < 180).length;
-  const percentUnder180 = (under180 / receipts.length) * 100;
-
-  // Calculate average urge drop
-  const urgeDrops = receipts
-    .filter(r => r.urgeBefore !== null && r.urgeAfter !== null)
-    .map(r => r.urgeBefore! - r.urgeAfter!);
-  const avgUrgeDrop = urgeDrops.length > 0 
-    ? urgeDrops.reduce((sum, drop) => sum + drop, 0) / urgeDrops.length 
+  const avgTm = calmerSessions.length > 0
+    ? tmValues.reduce((sum, val) => sum + val, 0) / tmValues.length
     : 0;
 
-  // Count by lane
-  const laneCount: Record<Lane, number> = { ground: 0, reframe: 0, act: 0 };
-  receipts.forEach(r => {
-    laneCount[r.lane]++;
-  });
+  const medianTm = calmerSessions.length > 0 ? getMedian(tmValues) : 0;
 
-  // Calculate median RRT by lane
-  const laneMedianRRT: Record<Lane, number> = { ground: 0, reframe: 0, act: 0 };
-  (['ground', 'reframe', 'act'] as Lane[]).forEach(lane => {
-    const laneRRTs = receipts
-      .filter(r => r.lane === lane)
-      .map(r => r.rrtSec)
-      .sort((a, b) => a - b);
-    laneMedianRRT[lane] = laneRRTs.length > 0 ? getMedian(laneRRTs) : 0;
-  });
+  const successRate = (calmerSessions.length / sessions.length) * 100;
+  const completedCycle = sessions.filter(s => s.completedCycle).length;
+  const completionRate = (completedCycle / sessions.length) * 100;
+
+  // Calculate trend (compare first half vs second half)
+  const trend = calculateTrend(calmerSessions);
 
   return {
-    medianRRT,
-    percentUnder180,
-    avgUrgeDrop,
-    laneCount,
-    totalReceipts: receipts.length,
-    laneMedianRRT,
+    avgTm,
+    medianTm,
+    totalSessions: sessions.length,
+    successRate,
+    completionRate,
+    trend,
   };
+}
+
+function calculateTrend(sessions: ResetSession[]): number {
+  if (sessions.length < 4) return 0;
+
+  const midpoint = Math.floor(sessions.length / 2);
+  const firstHalf = sessions.slice(0, midpoint);
+  const secondHalf = sessions.slice(midpoint);
+
+  const firstAvg = firstHalf.reduce((sum, s) => sum + s.tmSec, 0) / firstHalf.length;
+  const secondAvg = secondHalf.reduce((sum, s) => sum + s.tmSec, 0) / secondHalf.length;
+
+  if (firstAvg === 0) return 0;
+  
+  // Negative trend is good (less time to reset)
+  return ((secondAvg - firstAvg) / firstAvg) * 100;
 }
 
 function getMedian(sorted: number[]): number {
@@ -85,18 +86,4 @@ export function getToday(): Date {
   const date = new Date();
   date.setHours(23, 59, 59, 999);
   return date;
-}
-
-export function getLaneMedian(receipts: CalmReceipt[], lane: Lane): number {
-  const secs = receipts.filter(r => r.lane === lane).map(r => r.rrtSec).sort((a, b) => a - b);
-  if (!secs.length) return Number.POSITIVE_INFINITY;
-  const m = Math.floor(secs.length / 2);
-  return secs.length % 2 ? secs[m] : Math.round((secs[m - 1] + secs[m]) / 2);
-}
-
-export function getBestLane(receipts: CalmReceipt[]): Lane {
-  const lanes: Lane[] = ['ground', 'reframe', 'act'];
-  return lanes
-    .map(l => [l, getLaneMedian(receipts, l)] as const)
-    .sort((a, b) => a[1] - b[1])[0][0];
 }
