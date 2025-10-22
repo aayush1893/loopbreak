@@ -1,16 +1,18 @@
 export type ResetStep = 'cognitive' | 'sensory' | 'breathing';
 
 export interface ResetSession {
-  id: string;
-  tsStart: number;        // When user pressed "Start Reset"
-  tsEnd: number;          // When user confirmed they feel calmer
-  tmSec: number;          // Total rumination time (time-to-mental-reset)
-  completedCycle: boolean; // Did they complete the 90s cycle?
-  feltCalmer: boolean;    // Did they feel calmer after?
-  note?: string;          // Optional note (max 80 chars)
-  version: 1;
+  session_id: string;
+  started_at_iso: string;
+  finished_at_iso: string;
+  protocol_seconds: number;        // Always 90
+  tm_seconds: number | null;       // Only if "calmer" was tapped
+  completed_bool: boolean;         // True when flow reached end
+  lane: string;                    // Default "classic90"
+  urge_delta_0to10: number | null; // Optional self-rating
+  tags_json: string | null;        // Optional metadata
+  app_version: string;
+  device_info: string;
 }
 
-// Legacy type alias for backwards compatibility during migration
+// Legacy type alias for backwards compatibility
 export type CalmReceipt = ResetSession;
-export type Lane = 'ground' | 'reframe' | 'act';

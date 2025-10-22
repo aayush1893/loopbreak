@@ -6,7 +6,7 @@ interface LoopBreakDB extends DBSchema {
     key: string;
     value: CalmReceipt;
     indexes: {
-      'by-timestamp': number;
+      'by-timestamp': string;
       'by-lane': string;
     };
   };
@@ -25,9 +25,9 @@ export async function getDB(): Promise<IDBPDatabase<LoopBreakDB>> {
       upgrade(db) {
         // Create receipts store
         const receiptStore = db.createObjectStore('receipts', {
-          keyPath: 'id',
+          keyPath: 'session_id',
         });
-        receiptStore.createIndex('by-timestamp', 'tsStart');
+        receiptStore.createIndex('by-timestamp', 'started_at_iso');
         receiptStore.createIndex('by-lane', 'lane');
       },
     });
@@ -67,7 +67,7 @@ export async function getReceipt(id: string): Promise<CalmReceipt | undefined> {
     return await db.get('receipts', id);
   } catch (error) {
     const receipts = getReceiptsFromLocalStorage();
-    return receipts.find(r => r.id === id);
+    return receipts.find(r => r.session_id === id);
   }
 }
 
@@ -77,7 +77,7 @@ export async function deleteReceipt(id: string): Promise<void> {
     await db.delete('receipts', id);
   } catch (error) {
     const receipts = getReceiptsFromLocalStorage();
-    const filtered = receipts.filter(r => r.id !== id);
+    const filtered = receipts.filter(r => r.session_id !== id);
     localStorage.setItem('loopbreak_receipts', JSON.stringify(filtered));
   }
 }
@@ -88,7 +88,8 @@ export async function getReceiptsByDateRange(
 ): Promise<CalmReceipt[]> {
   const allReceipts = await getAllReceipts();
   return allReceipts.filter(
-    r => r.tsStart >= startDate.getTime() && r.tsStart <= endDate.getTime()
+    r => new Date(r.started_at_iso).getTime() >= startDate.getTime() && 
+         new Date(r.started_at_iso).getTime() <= endDate.getTime()
   );
 }
 
@@ -103,17 +104,30 @@ function getReceiptsFromLocalStorage(): CalmReceipt[] {
   }
 }
 
-// Export data as CSV
+// Export data as CSV (CalmReceipt format)
 export function exportToCSV(sessions: ResetSession[]): string {
-  const headers = ['ID', 'Start Time', 'End Time', 'tₘ (sec)', 'Completed Cycle', 'Felt Calmer', 'Note'];
-  const rows = sessions.map(r => [
-    r.id,
-    new Date(r.tsStart).toISOString(),
-    new Date(r.tsEnd).toISOString(),
-    r.tmSec.toString(),
-    r.completedCycle ? 'Yes' : 'No',
-    r.feltCalmer ? 'Yes' : 'No',
-    r.note ?? ''
+  const headers = [
+    'session_id',
+    'started_at_iso',
+    'finished_at_iso',
+    'lane',
+    'protocol_seconds',
+    'tm_seconds',
+    'completed_bool',
+    'urge_delta_0to10',
+    'tags_json'
+  ];
+  
+  const rows = sessions.map(s => [
+    s.session_id,
+    s.started_at_iso,
+    s.finished_at_iso,
+    s.lane,
+    s.protocol_seconds.toString(),
+    s.tm_seconds !== null ? s.tm_seconds.toString() : '',
+    s.completed_bool ? 'true' : 'false',
+    s.urge_delta_0to10 !== null ? s.urge_delta_0to10.toString() : '',
+    s.tags_json ?? ''
   ]);
 
   return [
@@ -122,9 +136,25 @@ export function exportToCSV(sessions: ResetSession[]): string {
   ].join('\n');
 }
 
-export function downloadCSV(sessions: ResetSession[], filename: string = 'reset-sessions.csv'): void {
+// Export data as JSON
+export function exportToJSON(sessions: ResetSession[]): string {
+  return JSON.stringify(sessions, null, 2);
+}
+
+export function downloadCSV(sessions: ResetSession[], filename: string = 'calm-receipts.csv'): void {
   const csv = exportToCSV(sessions);
   const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+export function downloadJSON(sessions: ResetSession[], filename: string = 'calm-receipts.json'): void {
+  const json = exportToJSON(sessions);
+  const blob = new Blob([json], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;

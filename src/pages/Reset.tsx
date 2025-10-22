@@ -43,22 +43,25 @@ export default function Reset() {
     const tmSec = Math.round(tmMs / 1000);
 
     const session: ResetSession = {
-      id: uuidv4(),
-      tsStart: startTimeRef.current,
-      tsEnd: endTime,
-      tmSec,
-      completedCycle: phase === 'check-in', // true if they finished the 90s cycle
-      feltCalmer,
-      note: note.trim() || undefined,
-      version: 1,
+      session_id: uuidv4(),
+      started_at_iso: new Date(startTimeRef.current).toISOString(),
+      finished_at_iso: new Date(endTime).toISOString(),
+      protocol_seconds: 90,
+      tm_seconds: feltCalmer ? tmSec : null,
+      completed_bool: phase === 'check-in',
+      lane: 'classic90',
+      urge_delta_0to10: null,
+      tags_json: note.trim() ? JSON.stringify({ note: note.trim() }) : null,
+      app_version: '1.0.0',
+      device_info: navigator.userAgent,
     };
 
     try {
       await saveReceipt(session);
       
       toast({
-        title: feltCalmer ? '✨ Reset complete!' : 'Loop interrupted',
-        description: `Time to reset: ${formatTime(tmMs)}`,
+        title: feltCalmer ? 'Logged. Keep training your time-to-calm.' : 'Rep logged. Consistency builds the skill.',
+        description: feltCalmer ? `Time to reset: ${formatTime(tmMs)}` : undefined,
       });
 
       setTimeout(() => {

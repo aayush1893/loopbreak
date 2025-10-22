@@ -1,37 +1,35 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
 import { promptInstall } from '@/lib/pwa';
-import { getAllReceipts } from '@/lib/db';
+import { getAllReceipts, downloadCSV, downloadJSON } from '@/lib/db';
+import { calculateStats } from '@/lib/stats';
 import { formatTime } from '@/lib/timer';
-import { PRIVACY_MESSAGE } from '@/lib/constants';
-import { Play, BarChart3, Download, Lock, TrendingDown } from 'lucide-react';
+import { Sparkline } from '@/components/Sparkline';
+import { Play, Download, FileDown, TrendingDown, TrendingUp, Minus } from 'lucide-react';
 import type { ResetSession } from '@/types/calm-receipt';
 
 export default function Home() {
   const navigate = useNavigate();
   const [canInstall, setCanInstall] = useState(false);
-  const [recentSessions, setRecentSessions] = useState<ResetSession[]>([]);
-  const [avgTm, setAvgTm] = useState<number | null>(null);
+  const [sessions, setSessions] = useState<ResetSession[]>([]);
+  const [stats, setStats] = useState<ReturnType<typeof calculateStats> | null>(null);
 
   useEffect(() => {
     const isInstalled = window.matchMedia('(display-mode: standalone)').matches;
     const handler = () => setCanInstall(true);
     window.addEventListener('beforeinstallprompt', handler);
     if (!isInstalled) setCanInstall(true);
-    loadRecentSessions();
+    loadSessions();
     return () => window.removeEventListener('beforeinstallprompt', handler);
   }, []);
 
-  const loadRecentSessions = async () => {
+  const loadSessions = async () => {
     try {
       const all = await getAllReceipts();
-      const calmerSessions = all.filter(s => s.feltCalmer).slice(-7);
-      setRecentSessions(calmerSessions);
-      if (calmerSessions.length > 0) {
-        const avg = calmerSessions.reduce((sum, s) => sum + s.tmSec, 0) / calmerSessions.length;
-        setAvgTm(Math.round(avg));
-      }
+      setSessions(all);
+      setStats(calculateStats(all));
     } catch (error) {
       console.error('Error loading sessions:', error);
     }
@@ -42,56 +40,109 @@ export default function Home() {
     if (installed) setCanInstall(false);
   };
 
+  const handleExportCSV = () => {
+    downloadCSV(sessions);
+  };
+
+  const handleExportJSON = () => {
+    downloadJSON(sessions);
+  };
+
+  const renderTrendIcon = () => {
+    if (!stats?.percentChange) return <Minus className="h-4 w-4" />;
+    if (stats.percentChange < 0) return <TrendingDown className="h-4 w-4 text-green-500" />;
+    return <TrendingUp className="h-4 w-4 text-red-500" />;
+  };
+
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto max-w-2xl px-4 py-12 space-y-8">
-        <div className="text-center space-y-3">
-          <h1 className="text-4xl font-bold tracking-tight">Thought Reset Timer</h1>
-          <p className="text-lg text-muted-foreground">Measure and reduce your rumination time (tₘ)</p>
+    <div className="min-h-screen bg-background flex flex-col">
+      <div className="flex-1 container mx-auto max-w-2xl px-4 py-8 space-y-6">
+        {/* Header */}
+        <div className="text-center space-y-2">
+          <h1 className="text-3xl font-bold tracking-tight">LoopBreak</h1>
+          <p className="text-sm text-muted-foreground">Train your time-to-calm</p>
         </div>
 
-        {avgTm !== null && (
-          <div className="rounded-lg border bg-card p-6 shadow-sm text-center space-y-2">
-            <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
-              <TrendingDown className="h-4 w-4" />
-              <span>Your average reset time</span>
+        {/* Metric Tiles */}
+        <div className="grid grid-cols-3 gap-3">
+          <Card className="p-4 text-center">
+            <div className="text-xs text-muted-foreground mb-1">Last tₘ</div>
+            <div className="text-2xl font-bold tabular-nums">
+              {stats?.lastTm ? formatTime(stats.lastTm * 1000) : '—'}
             </div>
-            <div className="text-5xl font-bold text-primary tabular-nums">{formatTime(avgTm * 1000)}</div>
-            <p className="text-sm text-muted-foreground">Based on last {recentSessions.length} reset{recentSessions.length !== 1 ? 's' : ''}</p>
+          </Card>
+          
+          <Card className="p-4 text-center">
+            <div className="text-xs text-muted-foreground mb-1">7-day median</div>
+            <div className="text-2xl font-bold tabular-nums">
+              {stats?.medianTm7d ? formatTime(stats.medianTm7d * 1000) : '—'}
+            </div>
+          </Card>
+          
+          <Card className="p-4 text-center">
+            <div className="text-xs text-muted-foreground mb-1 flex items-center justify-center gap-1">
+              {renderTrendIcon()}
+              <span>Change</span>
+            </div>
+            <div className="text-2xl font-bold tabular-nums">
+              {stats?.percentChange !== null 
+                ? `${stats.percentChange > 0 ? '+' : ''}${stats.percentChange.toFixed(0)}%`
+                : '—'}
+            </div>
+          </Card>
+        </div>
+
+        {/* Sparkline */}
+        {stats && stats.sparklineData.length > 0 && (
+          <Card className="p-4">
+            <div className="text-xs text-muted-foreground mb-3">Last 14 sessions</div>
+            <Sparkline data={stats.sparklineData} width={300} height={60} className="w-full" />
+          </Card>
+        )}
+
+        {/* Secondary Stat */}
+        {stats?.percentUnder3min !== null && (
+          <div className="text-center text-sm text-muted-foreground">
+            {stats.percentUnder3min.toFixed(0)}% of episodes &lt; 3:00 in last 7 days
           </div>
         )}
 
-        <Button size="xl" className="w-full h-24 text-2xl shadow-lg hover:shadow-xl transition-shadow" onClick={() => navigate('/reset')}>
-          <Play className="mr-3 h-8 w-8" />
+        {/* Primary CTA */}
+        <Button 
+          size="xl" 
+          className="w-full h-20 text-xl shadow-lg hover:shadow-xl transition-shadow" 
+          onClick={() => navigate('/reset')}
+        >
+          <Play className="mr-3 h-7 w-7" />
           Start Reset
         </Button>
 
-        <p className="text-center text-sm text-muted-foreground italic">90-second guided cycle to interrupt thought loops</p>
-
-        <div className="space-y-3">
-          <Button size="lg" variant="outline" className="w-full" onClick={() => navigate('/stats')}>
-            <BarChart3 className="mr-3" />
-            View Progress
+        {/* Export & Install */}
+        <div className="grid grid-cols-2 gap-3">
+          <Button size="sm" variant="outline" onClick={handleExportCSV}>
+            <FileDown className="mr-2 h-4 w-4" />
+            Export CSV
           </Button>
-          {canInstall && (
-            <Button size="lg" variant="outline" className="w-full" onClick={handleInstall}>
-              <Download className="mr-3" />
-              Install App
-            </Button>
-          )}
+          <Button size="sm" variant="outline" onClick={handleExportJSON}>
+            <FileDown className="mr-2 h-4 w-4" />
+            Export JSON
+          </Button>
         </div>
 
-        <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
-          <Lock className="h-4 w-4" />
-          <span>{PRIVACY_MESSAGE}</span>
-        </div>
-
-        <div className="flex justify-center gap-4 text-sm text-muted-foreground">
-          <button onClick={() => navigate('/tutorial')} className="hover:underline">How it works</button>
-          <span>•</span>
-          <button onClick={() => navigate('/privacy')} className="hover:underline">Privacy</button>
-        </div>
+        {canInstall && (
+          <Button size="lg" variant="outline" className="w-full" onClick={handleInstall}>
+            <Download className="mr-3" />
+            Install App
+          </Button>
+        )}
       </div>
+
+      {/* Footer */}
+      <footer className="border-t bg-muted/30 py-4 px-4 text-center">
+        <p className="text-xs text-muted-foreground">
+          Offline • No account • Data stays on this device • Wellness tool (not medical advice)
+        </p>
+      </footer>
     </div>
   );
 }

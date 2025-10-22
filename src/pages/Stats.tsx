@@ -1,27 +1,18 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { getReceiptsByDateRange } from '@/lib/db';
-import { calculateStats, getLast7Days, getToday } from '@/lib/stats';
+import { Card } from '@/components/ui/card';
+import { getAllReceipts, downloadCSV, downloadJSON } from '@/lib/db';
+import { calculateStats } from '@/lib/stats';
 import { formatTime } from '@/lib/timer';
-import { ArrowLeft, TrendingDown, Clock, Target, Activity, CheckCircle } from 'lucide-react';
+import { Sparkline } from '@/components/Sparkline';
+import { ArrowLeft, FileDown, TrendingDown, TrendingUp, Minus } from 'lucide-react';
 import type { ResetSession } from '@/types/calm-receipt';
-import type { Stats as StatsType } from '@/lib/stats';
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-} from 'recharts';
 
 export default function Stats() {
   const navigate = useNavigate();
   const [sessions, setSessions] = useState<ResetSession[]>([]);
-  const [stats, setStats] = useState<StatsType | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState<ReturnType<typeof calculateStats> | null>(null);
 
   useEffect(() => {
     loadStats();
@@ -29,167 +20,152 @@ export default function Stats() {
 
   const loadStats = async () => {
     try {
-      const startDate = getLast7Days();
-      const endDate = getToday();
-      const data = await getReceiptsByDateRange(startDate, endDate);
-      setSessions(data);
-      setStats(calculateStats(data));
+      const allSessions = await getAllReceipts();
+      setSessions(allSessions);
+      setStats(calculateStats(allSessions));
     } catch (error) {
       console.error('Error loading stats:', error);
-    } finally {
-      setLoading(false);
     }
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-lg text-muted-foreground">Loading stats...</div>
-      </div>
-    );
-  }
+  const handleExportCSV = () => {
+    downloadCSV(sessions);
+  };
 
-  if (!stats || sessions.length === 0) {
-    return (
-      <div className="min-h-screen bg-background">
-        <div className="container mx-auto max-w-3xl px-4 py-12">
+  const handleExportJSON = () => {
+    downloadJSON(sessions);
+  };
+
+  const renderTrendIcon = () => {
+    if (!stats?.percentChange) return <Minus className="h-5 w-5" />;
+    if (stats.percentChange < 0) return <TrendingDown className="h-5 w-5 text-green-500" />;
+    return <TrendingUp className="h-5 w-5 text-red-500" />;
+  };
+
+  return (
+    <div className="min-h-screen bg-background">
+      <div className="container mx-auto max-w-2xl px-4 py-8">
+        <div className="mb-6 flex items-center justify-between">
           <Button variant="ghost" onClick={() => navigate('/')}>
             <ArrowLeft className="mr-2" />
             Back
           </Button>
-
-          <div className="mt-12 rounded-lg border bg-card p-12 text-center">
-            <Activity className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
-            <h2 className="mb-2 text-xl font-semibold">No data yet</h2>
-            <p className="text-muted-foreground">
-              Complete a few resets to see your progress
-            </p>
+          <div className="flex gap-2">
+            <Button size="sm" variant="outline" onClick={handleExportCSV}>
+              <FileDown className="mr-2 h-4 w-4" />
+              CSV
+            </Button>
+            <Button size="sm" variant="outline" onClick={handleExportJSON}>
+              <FileDown className="mr-2 h-4 w-4" />
+              JSON
+            </Button>
           </div>
         </div>
-      </div>
-    );
-  }
 
-  // Prepare chart data - only successful resets
-  const calmerSessions = sessions.filter(s => s.feltCalmer);
-  const tmLineData = calmerSessions.map((s, index) => ({
-    session: index + 1,
-    tm: s.tmSec,
-    label: formatTime(s.tmSec * 1000),
-  }));
+        <h1 className="text-3xl font-bold mb-8 text-center">Your Progress</h1>
 
-  return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto max-w-5xl px-4 py-12">
-        <Button variant="ghost" onClick={() => navigate('/')} className="mb-8">
-          <ArrowLeft className="mr-2" />
-          Back
-        </Button>
+        {stats && (
+          <div className="space-y-6">
+            {/* Key Metrics */}
+            <div className="grid gap-4 md:grid-cols-2">
+              <Card className="p-6">
+                <div className="text-sm text-muted-foreground mb-2">Last tₘ</div>
+                <div className="text-3xl font-bold tabular-nums">
+                  {stats.lastTm ? formatTime(stats.lastTm * 1000) : '—'}
+                </div>
+              </Card>
 
-        <h1 className="mb-8 text-3xl font-bold">Your Progress (Last 7 Days)</h1>
+              <Card className="p-6">
+                <div className="text-sm text-muted-foreground mb-2">7-day Median tₘ</div>
+                <div className="text-3xl font-bold tabular-nums">
+                  {stats.medianTm7d ? formatTime(stats.medianTm7d * 1000) : '—'}
+                </div>
+              </Card>
 
-        {/* KPI Cards */}
-        <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <div className="rounded-lg border bg-card p-5 shadow-sm">
-            <div className="mb-2 flex items-center gap-2 text-muted-foreground">
-              <Clock className="h-5 w-5" />
-              <span className="text-sm">Avg Reset Time (tₘ)</span>
+              <Card className="p-6">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
+                  {renderTrendIcon()}
+                  <span>% Change vs Prior 7d</span>
+                </div>
+                <div className="text-3xl font-bold tabular-nums">
+                  {stats.percentChange !== null 
+                    ? `${stats.percentChange > 0 ? '+' : ''}${stats.percentChange.toFixed(1)}%`
+                    : '—'}
+                </div>
+              </Card>
+
+              <Card className="p-6">
+                <div className="text-sm text-muted-foreground mb-2">% Episodes &lt; 3:00 (7d)</div>
+                <div className="text-3xl font-bold tabular-nums">
+                  {stats.percentUnder3min !== null 
+                    ? `${stats.percentUnder3min.toFixed(0)}%`
+                    : '—'}
+                </div>
+              </Card>
             </div>
-            <div className="text-3xl font-bold">{formatTime(Math.round(stats.avgTm) * 1000)}</div>
-          </div>
 
-          <div className="rounded-lg border bg-card p-5 shadow-sm">
-            <div className="mb-2 flex items-center gap-2 text-muted-foreground">
-              <TrendingDown className="h-5 w-5" />
-              <span className="text-sm">Trend</span>
-            </div>
-            <div className={`text-3xl font-bold ${stats.trend < 0 ? 'text-green-600' : stats.trend > 0 ? 'text-red-600' : ''}`}>
-              {stats.trend > 0 ? '+' : ''}{stats.trend.toFixed(0)}%
-            </div>
-            {stats.trend < 0 && (
-              <p className="text-xs text-green-600 mt-1">Improving! 🎉</p>
+            {/* Sparkline */}
+            {stats.sparklineData.length > 0 && (
+              <Card className="p-6">
+                <h2 className="text-lg font-semibold mb-4">Last 14 Sessions (tₘ Trend)</h2>
+                <Sparkline data={stats.sparklineData} width={500} height={100} className="w-full" />
+              </Card>
             )}
-          </div>
 
-          <div className="rounded-lg border bg-card p-5 shadow-sm">
-            <div className="mb-2 flex items-center gap-2 text-muted-foreground">
-              <CheckCircle className="h-5 w-5" />
-              <span className="text-sm">Success Rate</span>
+            {/* Summary Stats */}
+            <div className="grid gap-4 md:grid-cols-2">
+              <Card className="p-6">
+                <div className="text-sm text-muted-foreground mb-2">Total Sessions</div>
+                <div className="text-3xl font-bold">{stats.totalSessions}</div>
+              </Card>
+
+              <Card className="p-6">
+                <div className="text-sm text-muted-foreground mb-2">Completion Rate</div>
+                <div className="text-3xl font-bold">{Math.round(stats.successRate)}%</div>
+              </Card>
             </div>
-            <div className="text-3xl font-bold">{Math.round(stats.successRate)}%</div>
-            <p className="text-xs text-muted-foreground mt-1">Felt calmer</p>
-          </div>
 
-          <div className="rounded-lg border bg-card p-5 shadow-sm">
-            <div className="mb-2 flex items-center gap-2 text-muted-foreground">
-              <Activity className="h-5 w-5" />
-              <span className="text-sm">Total Resets</span>
-            </div>
-            <div className="text-3xl font-bold">{stats.totalSessions}</div>
-          </div>
-        </div>
-
-        {/* tₘ Line Chart */}
-        {tmLineData.length > 0 && (
-          <div className="mb-8 rounded-lg border bg-card p-6 shadow-sm">
-            <h2 className="mb-4 text-xl font-semibold">Reset Time (tₘ) Trend</h2>
-            <p className="mb-4 text-sm text-muted-foreground">
-              Lower is better - showing only successful resets
-            </p>
-            <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={tmLineData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis
-                  dataKey="session"
-                  stroke="hsl(var(--muted-foreground))"
-                  label={{ value: 'Reset Session', position: 'insideBottom', offset: -5 }}
-                />
-                <YAxis
-                  stroke="hsl(var(--muted-foreground))"
-                  label={{ value: 'Seconds', angle: -90, position: 'insideLeft' }}
-                />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: 'hsl(var(--popover))',
-                    border: '1px solid hsl(var(--border))',
-                    borderRadius: '8px',
-                  }}
-                  formatter={(value: number) => [formatTime(value * 1000), 'Time']}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="tm"
-                  stroke="hsl(var(--primary))"
-                  strokeWidth={2}
-                  dot={{ fill: 'hsl(var(--primary))' }}
-                />
-              </LineChart>
-            </ResponsiveContainer>
+            {/* Recent Sessions */}
+            {sessions.length > 0 && (
+              <Card className="p-6">
+                <h2 className="text-lg font-semibold mb-4">Recent Sessions</h2>
+                <div className="space-y-3">
+                  {sessions.slice(-10).reverse().map((session) => (
+                    <div key={session.session_id} className="flex justify-between items-center border-b pb-2 last:border-0">
+                      <div>
+                        <div className="text-sm font-medium">
+                          {new Date(session.started_at_iso).toLocaleDateString()} at {new Date(session.started_at_iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </div>
+                        {session.tags_json && (
+                          <div className="text-xs text-muted-foreground mt-1">
+                            {JSON.parse(session.tags_json).note}
+                          </div>
+                        )}
+                      </div>
+                      <div className="text-right">
+                        <div className="font-semibold tabular-nums">
+                          {session.tm_seconds !== null ? formatTime(session.tm_seconds * 1000) : '—'}
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          {session.tm_seconds !== null ? '✓ Calmer' : '○ Still spiraling'}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </Card>
+            )}
           </div>
         )}
 
-        {/* Insights */}
-        <div className="rounded-lg border bg-card p-6 shadow-sm">
-          <h2 className="mb-4 text-xl font-semibold">Insights</h2>
-          <div className="space-y-3 text-sm">
-            <p>
-              ✓ You've completed <strong>{stats.totalSessions}</strong> reset session{stats.totalSessions !== 1 ? 's' : ''} this week
-            </p>
-            <p>
-              ✓ <strong>{Math.round(stats.completionRate)}%</strong> of your sessions completed the full 90-second cycle
-            </p>
-            {stats.trend < -10 && (
-              <p className="text-green-600 font-medium">
-                🎉 Great progress! Your reset time has decreased by {Math.abs(Math.round(stats.trend))}% this week
-              </p>
-            )}
-            {stats.successRate > 80 && (
-              <p className="text-green-600 font-medium">
-                ⭐ Excellent! You're feeling calmer after {Math.round(stats.successRate)}% of your resets
-              </p>
-            )}
+        {sessions.length === 0 && (
+          <div className="text-center py-12">
+            <p className="text-muted-foreground">No sessions recorded yet.</p>
+            <Button className="mt-4" onClick={() => navigate('/reset')}>
+              Start your first reset
+            </Button>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );

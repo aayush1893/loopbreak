@@ -1,67 +1,91 @@
 import type { ResetSession } from '@/types/calm-receipt';
 
 export interface Stats {
-  avgTm: number;           // Average time-to-mental-reset (seconds)
-  medianTm: number;        // Median tₘ
-  totalSessions: number;   // Total reset sessions
-  successRate: number;     // % that felt calmer
-  completionRate: number;  // % that completed 90s cycle
-  trend: number;           // % change from previous period
+  lastTm: number | null;          // Most recent non-null tm_seconds
+  medianTm7d: number | null;      // 7-day median tₘ
+  percentChange: number | null;   // % change vs prior 7 days
+  sparklineData: number[];        // Last 14 non-null tm_seconds values
+  percentUnder3min: number | null; // % of episodes < 180s in last 7 days
+  totalSessions: number;
+  successRate: number;
 }
 
 export function calculateStats(sessions: ResetSession[]): Stats {
   if (sessions.length === 0) {
     return {
-      avgTm: 0,
-      medianTm: 0,
+      lastTm: null,
+      medianTm7d: null,
+      percentChange: null,
+      sparklineData: [],
+      percentUnder3min: null,
       totalSessions: 0,
       successRate: 0,
-      completionRate: 0,
-      trend: 0,
     };
   }
 
-  // Filter to successful sessions (felt calmer)
-  const calmerSessions = sessions.filter(s => s.feltCalmer);
-  const tmValues = calmerSessions.map(s => s.tmSec).sort((a, b) => a - b);
+  // Get sessions with non-null tm_seconds
+  const successfulSessions = sessions.filter(s => s.tm_seconds !== null);
+  
+  // Last tₘ
+  const lastTm = successfulSessions.length > 0 
+    ? successfulSessions[successfulSessions.length - 1].tm_seconds 
+    : null;
 
-  const avgTm = calmerSessions.length > 0
-    ? tmValues.reduce((sum, val) => sum + val, 0) / tmValues.length
+  // Get sessions from last 7 days
+  const now = Date.now();
+  const sevenDaysAgo = now - 7 * 24 * 60 * 60 * 1000;
+  const fourteenDaysAgo = now - 14 * 24 * 60 * 60 * 1000;
+  
+  const last7Days = successfulSessions.filter(
+    s => new Date(s.started_at_iso).getTime() >= sevenDaysAgo
+  );
+  const prev7Days = successfulSessions.filter(
+    s => {
+      const time = new Date(s.started_at_iso).getTime();
+      return time >= fourteenDaysAgo && time < sevenDaysAgo;
+    }
+  );
+
+  // 7-day median tₘ
+  const medianTm7d = last7Days.length > 0
+    ? getMedian(last7Days.map(s => s.tm_seconds!).sort((a, b) => a - b))
+    : null;
+
+  // % change vs prior 7 days
+  const medianPrev7d = prev7Days.length > 0
+    ? getMedian(prev7Days.map(s => s.tm_seconds!).sort((a, b) => a - b))
+    : null;
+  
+  const percentChange = medianTm7d !== null && medianPrev7d !== null && medianPrev7d > 0
+    ? ((medianTm7d - medianPrev7d) / medianPrev7d) * 100
+    : null;
+
+  // Sparkline: last 14 non-null tm_seconds
+  const sparklineData = successfulSessions
+    .slice(-14)
+    .map(s => s.tm_seconds!);
+
+  // % of episodes < 3:00 in last 7 days
+  const under3min = last7Days.filter(s => s.tm_seconds! < 180).length;
+  const percentUnder3min = last7Days.length > 0
+    ? (under3min / last7Days.length) * 100
+    : null;
+
+  // Success rate (completed sessions)
+  const completedSessions = sessions.filter(s => s.completed_bool).length;
+  const successRate = sessions.length > 0
+    ? (completedSessions / sessions.length) * 100
     : 0;
 
-  const medianTm = calmerSessions.length > 0 ? getMedian(tmValues) : 0;
-
-  const successRate = (calmerSessions.length / sessions.length) * 100;
-  const completedCycle = sessions.filter(s => s.completedCycle).length;
-  const completionRate = (completedCycle / sessions.length) * 100;
-
-  // Calculate trend (compare first half vs second half)
-  const trend = calculateTrend(calmerSessions);
-
   return {
-    avgTm,
-    medianTm,
+    lastTm,
+    medianTm7d,
+    percentChange,
+    sparklineData,
+    percentUnder3min,
     totalSessions: sessions.length,
     successRate,
-    completionRate,
-    trend,
   };
-}
-
-function calculateTrend(sessions: ResetSession[]): number {
-  if (sessions.length < 4) return 0;
-
-  const midpoint = Math.floor(sessions.length / 2);
-  const firstHalf = sessions.slice(0, midpoint);
-  const secondHalf = sessions.slice(midpoint);
-
-  const firstAvg = firstHalf.reduce((sum, s) => sum + s.tmSec, 0) / firstHalf.length;
-  const secondAvg = secondHalf.reduce((sum, s) => sum + s.tmSec, 0) / secondHalf.length;
-
-  if (firstAvg === 0) return 0;
-  
-  // Negative trend is good (less time to reset)
-  return ((secondAvg - firstAvg) / firstAvg) * 100;
 }
 
 function getMedian(sorted: number[]): number {
