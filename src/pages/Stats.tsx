@@ -37,7 +37,7 @@ export default function Stats() {
   };
 
   const renderTrendIcon = () => {
-    if (!stats?.percentChange) return <Minus className="h-5 w-5" />;
+    if (!stats || stats.percentChange === null) return <Minus className="h-5 w-5" />;
     if (stats.percentChange < 0) return <TrendingDown className="h-5 w-5 text-green-500" />;
     return <TrendingUp className="h-5 w-5 text-red-500" />;
   };
