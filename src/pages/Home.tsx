@@ -7,7 +7,7 @@ import { getAllReceipts, downloadCSV, downloadJSON } from '@/lib/db';
 import { calculateStats } from '@/lib/stats';
 import { formatTime } from '@/lib/timer';
 import { Sparkline } from '@/components/Sparkline';
-import { Play, Download, FileDown, TrendingDown, TrendingUp, Minus } from 'lucide-react';
+import { Play, Download, FileDown, TrendingDown, TrendingUp, Minus, BookOpen } from 'lucide-react';
 import type { ResetSession } from '@/types/calm-receipt';
 
 export default function Home() {
@@ -115,6 +115,17 @@ export default function Home() {
         >
           <Play className="mr-3 h-7 w-7" />
           Start Reset
+        </Button>
+
+        {/* Tutorial Button */}
+        <Button 
+          size="lg" 
+          variant="outline" 
+          className="w-full" 
+          onClick={() => navigate('/tutorial')}
+        >
+          <BookOpen className="mr-2 h-5 w-5" />
+          How to Use LoopBreak
         </Button>
 
         {/* Export & Install */}
