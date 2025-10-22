@@ -101,7 +101,7 @@ export default function Home() {
         )}
 
         {/* Secondary Stat */}
-        {stats?.percentUnder3min !== null && (
+        {stats && stats.percentUnder3min !== null && (
           <div className="text-center text-sm text-muted-foreground">
             {stats.percentUnder3min.toFixed(0)}% of episodes &lt; 3:00 in last 7 days
           </div>
