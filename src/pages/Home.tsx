@@ -49,7 +49,7 @@ export default function Home() {
   };
 
   const renderTrendIcon = () => {
-    if (!stats?.percentChange) return <Minus className="h-4 w-4" />;
+    if (!stats || stats.percentChange === null) return <Minus className="h-4 w-4" />;
     if (stats.percentChange < 0) return <TrendingDown className="h-4 w-4 text-green-500" />;
     return <TrendingUp className="h-4 w-4 text-red-500" />;
   };
@@ -85,7 +85,7 @@ export default function Home() {
               <span>Change</span>
             </div>
             <div className="text-2xl font-bold tabular-nums">
-              {stats?.percentChange !== null 
+              {stats && stats.percentChange !== null 
                 ? `${stats.percentChange > 0 ? '+' : ''}${stats.percentChange.toFixed(0)}%`
                 : '—'}
             </div>
