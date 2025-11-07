@@ -2,7 +2,7 @@
 
 ## Project info
 
-**URL**: https://lovable.dev/projects/bb86e5d4-1287-4033-85b5-55fa49816070
+[**URL**: https://lovable.dev/projects/bb86e5d4-1287-4033-85b5-55fa49816070](https://calm-loop-break.lovable.app/)
 
 ## How can I edit this code?
 
