@@ -1,73 +1,363 @@
-# Welcome to your Lovable project
+# LoopBreak — CalmReceipt
 
-## Project info
+**Stop rumination loops in 3 taps. Track your RRT.**
 
-[**URL**: https://lovable.dev/projects/bb86e5d4-1287-4033-85b5-55fa49816070](https://calm-loop-break.lovable.app/)
+![License](https://img.shields.io/badge/license-MIT-blue.svg)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.8-blue)
+![React](https://img.shields.io/badge/React-18.3-61dafb)
 
-## How can I edit this code?
+🔗 **Live Demo:** [calm-loop-break.lovable.app](https://calm-loop-break.lovable.app)  
+📚 **Prior Art Publication:** [Pending Zenodo upload]
 
-There are several ways of editing your application.
+---
 
-**Use Lovable**
+## What is LoopBreak?
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/bb86e5d4-1287-4033-85b5-55fa49816070) and start prompting.
+LoopBreak is a privacy-first web app that helps you measure and shorten your **Rumination Recovery Time (RRT)**—the seconds between when you notice yourself spiraling and when you feel calm again.
 
-Changes made via Lovable will be committed automatically to this repo.
+Instead of just tracking *how often* you feel anxious, LoopBreak tracks *how quickly* you can self-regulate. Think of it like a fitness tracker, but for emotional regulation.
 
-**Use your preferred IDE**
+### Key Features
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+- ⏱️ **RRT Tracking** – Measure actual recovery time in seconds
+- 🎯 **Three Evidence-Based Lanes**:
+  - **Ground** – 5-4-3-2-1 sensory grounding + paced breathing
+  - **Reframe** – CBT-style cognitive reframing prompts
+  - **Act** – 2-minute behavioral activation micro-tasks
+- 📊 **Personal Analytics** – See which techniques work best for YOU
+- 🤖 **Auto Lane** – Automatically suggests your most effective technique
+- 🔒 **Privacy First** – Everything stays on YOUR device (IndexedDB)
+- 📱 **Works Offline** – Progressive Web App (PWA)
+- 🖨️ **QR Quick Access** – Print QR codes for instant activation during distress
+- 🎨 **Dark/Light Mode** – System-aware theming
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+---
 
-Follow these steps:
+## Why RRT Matters
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+Research in affective neuroscience shows that **recovery time** (how long emotions last) is a better predictor of mental health than peak intensity (Davidson, 1998). Most mental health apps track frequency or severity—LoopBreak tracks the metric that actually matters: *how fast you bounce back*.
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+### Scientific Foundation
 
-# Step 3: Install the necessary dependencies.
-npm i
+LoopBreak combines three evidence-based interventions:
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+1. **Grounding + Paced Breathing** → Activates parasympathetic nervous system (Zaccaro et al., 2018)
+2. **Cognitive Reframing** → Challenges distorted thinking patterns (Hofmann et al., 2012)
+3. **Behavioral Activation** → Interrupts avoidance cycles (Stein et al., 2021)
+
+---
+
+## Tech Stack
+
+- **Frontend:** React 18 + TypeScript
+- **Styling:** Tailwind CSS + shadcn/ui components
+- **Storage:** IndexedDB (via `idb`) with localStorage fallback
+- **Routing:** React Router v6
+- **Charts:** Recharts
+- **PWA:** Vite PWA plugin with service worker
+- **Export:** jsPDF + html2canvas for receipt generation
+- **QR Codes:** qrcode.react
+- **Build Tool:** Vite 5
+- **Deployment:** Lovable.app (currently)
+
+---
+
+## Getting Started
+
+### Prerequisites
+
+- Node.js 18+ (recommended via [nvm](https://github.com/nvm-sh/nvm))
+- npm or bun
+
+### Installation
+
+```bash
+# Clone the repository
+git clone https://github.com/aayush1893/calm-loop-break.git
+cd calm-loop-break
+
+# Install dependencies
+npm install
+
+# Start development server
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+The app will be available at `http://localhost:5173`
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+### Build for Production
 
-**Use GitHub Codespaces**
+```bash
+npm run build
+```
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+The optimized build will be in the `dist/` directory.
 
-## What technologies are used for this project?
+---
 
-This project is built with:
+## How to Use
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+### Quick Start
 
-## How can I deploy this project?
+1. **Start a Loop** – Tap "Start Loop" when you notice rumination beginning
+2. **Choose Your Lane**:
+   - **Ground** – When feeling disconnected or overwhelmed
+   - **Reframe** – For negative thought spirals
+   - **Act** – When you need physical movement
+3. **Follow the Technique** – Complete the guided activity (≤2 minutes)
+4. **Mark Calm** – Tap "I'm Calmer" when you feel better
+5. **Log Your Experience** – Rate your before/after distress (0-10)
 
-Simply open [Lovable](https://lovable.dev/projects/bb86e5d4-1287-4033-85b5-55fa49816070) and click on Share -> Publish.
+### Understanding Your Data
 
-## Can I connect a custom domain to my Lovable project?
+Each session creates a **CalmReceipt**:
 
-Yes, you can!
+```typescript
+interface ResetSession {
+  session_id: string;
+  started_at_iso: string;
+  finished_at_iso: string;
+  protocol_seconds: number;      // Always 90 (1.5 min protocol)
+  tm_seconds: number | null;     // Your actual RRT (if you tapped "Calmer")
+  completed_bool: boolean;
+  lane: string;                  // "ground", "reframe", or "act"
+  urge_delta_0to10: number | null;
+  tags_json: string | null;
+  app_version: string;
+  device_info: string;
+}
+```
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+### Features
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+#### Three Intervention Lanes
+
+**🏔️ Ground Lane**
+- 5 things you see
+- 4 things you touch
+- 3 things you hear
+- 2 things you smell
+- 1 slow breath (4-4-6 pattern)
+
+**🧠 Reframe Lane**
+- Identifies cognitive distortions
+- Provides CBT-based prompts
+- Guides you to write counter-thoughts
+- Challenges catastrophizing, mind-reading, etc.
+
+**⚡ Act Lane**
+- 2-minute micro-actions
+- Simple physical tasks
+- Interrupts mental loops with movement
+- Examples: walk to sink, sip water, stretch
+
+#### Analytics Dashboard
+
+View your stats:
+- Median RRT by lane
+- Success rate (% completed)
+- Urge reduction averages
+- Weekly trends
+- Personal effectiveness insights
+
+#### Privacy Features
+
+- ✅ No accounts required
+- ✅ No cloud storage
+- ✅ No external analytics
+- ✅ All data stays in your browser's IndexedDB
+- ✅ Export your data anytime (CSV/PDF)
+- ✅ One-click data deletion
+
+---
+
+## Project Structure
+
+```
+calm-loop-break/
+├── src/
+│   ├── components/
+│   │   ├── LoopTimer.tsx          # Main timer component
+│   │   ├── ResetFlow.tsx          # Intervention flow UI
+│   │   └── ui/                    # shadcn/ui components
+│   ├── pages/
+│   │   ├── Home.tsx               # Landing page
+│   │   ├── Reset.tsx              # Main loop interface
+│   │   ├── Stats.tsx              # Analytics dashboard
+│   │   ├── Tutorial.tsx           # How-to guide
+│   │   └── Privacy.tsx            # Privacy policy
+│   ├── types/
+│   │   └── calm-receipt.ts        # TypeScript definitions
+│   ├── lib/
+│   │   └── utils.ts               # Helper functions
+│   ├── hooks/                     # Custom React hooks
+│   └── App.tsx                    # Root component
+├── public/
+│   ├── manifest.json              # PWA manifest
+│   ├── sw.js                      # Service worker
+│   └── icons/                     # App icons
+└── package.json
+```
+
+---
+
+## Roadmap
+
+### v1.0 (Current)
+- [x] Three-lane intervention system
+- [x] RRT tracking
+- [x] CalmReceipt storage (IndexedDB)
+- [x] Basic analytics
+- [x] PWA support
+- [x] QR code generation
+- [x] Dark/light mode
+
+### v1.1 (Planned)
+- [ ] Custom domain deployment
+- [ ] HRV integration (optional)
+- [ ] Advanced analytics (trends, patterns)
+- [ ] Customizable intervention content
+- [ ] Multi-language support
+- [ ] Accessibility improvements (WCAG 2.1 AA)
+
+### v2.0 (Future)
+- [ ] Wearable integration (Apple Watch, Fitbit)
+- [ ] Research mode (anonymous data sharing for studies)
+- [ ] Therapist collaboration features
+- [ ] Export to research-standard formats (BIDS, JSON-LD)
+
+---
+
+## Scientific Documentation
+
+This system is documented in a defensive publication establishing prior art:
+
+**Citation:**  
+Sisodia, A. (2025). *LoopBreak: A Micro-Intervention System for Reducing Rumination Recovery Time (RRT) Through Grounding, Cognitive Reframing, and Behavioral Activation.* [Zenodo - DOI pending]
+
+### Key References
+
+- Davidson, R. J. (1998). Affective style and affective disorders: Perspectives from affective neuroscience. *Cognition & Emotion, 12*(3), 307–330.
+- Hofmann, S. G., et al. (2012). The efficacy of cognitive behavioral therapy: A review of meta-analyses. *Cognitive Therapy and Research, 36*(5), 427–440.
+- Stein, A. T., et al. (2021). Looking beyond depression: A meta-analysis of behavioral activation. *Psychological Medicine, 51*(9), 1491–1504.
+- Zaccaro, A., et al. (2018). How breath-control can change your life. *Frontiers in Human Neuroscience, 12*, 353.
+
+---
+
+## Contributing
+
+This is currently a personal research project, but contributions are welcome!
+
+### How to Contribute
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/improvement`)
+3. Make your changes
+4. Test thoroughly
+5. Commit with clear messages (`git commit -am 'Add new feature'`)
+6. Push to your branch (`git push origin feature/improvement`)
+7. Open a Pull Request
+
+### Areas for Contribution
+
+- 🐛 Bug reports and fixes
+- ✨ Feature suggestions
+- 📚 Documentation improvements
+- 🌍 Translations
+- ♿ Accessibility enhancements
+- 🧪 Test coverage
+
+---
+
+## Privacy & Ethics
+
+### Data Practices
+
+- **No cloud storage** – All data stays in your browser
+- **No accounts** – Use completely anonymously
+- **No analytics** – No tracking, no telemetry
+- **No third parties** – No external services
+- **You own your data** – Export or delete anytime
+
+### Medical Disclaimer
+
+⚠️ **LoopBreak is NOT a substitute for professional mental health care.**
+
+This is a self-help tool for tracking and practicing emotion regulation techniques. If you're experiencing:
+- Suicidal thoughts
+- Severe anxiety or panic attacks
+- Symptoms of depression
+- Mental health crisis
+
+**Please contact a professional:**
+- 🇺🇸 **988** – Suicide & Crisis Lifeline
+- 🇺🇸 **1-800-662-4357** – SAMHSA National Helpline
+- 🌍 [International Crisis Lines](https://findahelpline.com)
+
+---
+
+## Deployment Options
+
+### Option 1: Lovable (Current)
+- Currently deployed at: `calm-loop-break.lovable.app`
+- ❌ Issue: `.lovable.app` domain looks unprofessional
+
+### Option 2: Vercel (Recommended)
+```bash
+# Install Vercel CLI
+npm i -g vercel
+
+# Deploy
+vercel
+
+# Get: loopbreak.vercel.app (free subdomain)
+# OR connect custom domain
+```
+
+### Option 3: Netlify
+```bash
+# Install Netlify CLI
+npm i -g netlify-cli
+
+# Deploy
+netlify deploy --prod
+
+# Get: loopbreak.netlify.app (free subdomain)
+```
+
+### Option 4: Custom Domain
+See [DOMAIN_GUIDE.md](./DOMAIN_GUIDE.md) for:
+- Free subdomain options (is-a.dev, js.org)
+- Cheap domain registrars (Porkbun, Cloudflare)
+- Setup instructions
+
+---
+
+## License
+
+**Code:** MIT License – See [LICENSE](./LICENSE) for details  
+**Documentation:** CC BY 4.0 (Attribution)
+
+---
+
+## Contact
+
+**Aayush Sisodia**  
+📧 [aayushsisodia19@gmail.com](mailto:aayushsisodia19@gmail.com)  
+🐙 [GitHub: @aayush1893](https://github.com/aayush1893)  
+🔗 [LinkedIn](https://linkedin.com/in/aayush-sisodia) *(update with your profile)*
+
+---
+
+## Acknowledgments
+
+- Built with [Lovable](https://lovable.dev) for rapid prototyping
+- UI components from [shadcn/ui](https://ui.shadcn.com)
+- Inspired by affective neuroscience research on emotional recovery time
+- Thanks to the open-source community for the amazing tools
+
+---
+
+**Built with ❤️ for better mental health**
+
+*"The goal isn't to never ruminate—it's to recover faster."*
