@@ -145,3 +145,192 @@ All colors MUST be HSL.
     text-wrap: balance;
   }
 }
+
+/* ====================================
+   LOOPBREAK VISUAL ENHANCEMENTS
+   CSS-only improvements that don't affect functionality
+   ==================================== */
+
+@layer components {
+  /* Subtle card hover effect */
+  .card {
+    @apply transition-all duration-300;
+  }
+  
+  .card:hover {
+    @apply shadow-lg;
+    transform: translateY(-2px);
+  }
+
+  /* Enhanced button hover states */
+  button {
+    @apply transition-all duration-200;
+  }
+  
+  button:hover:not(:disabled) {
+    transform: translateY(-1px);
+  }
+  
+  button:active:not(:disabled) {
+    transform: translateY(0);
+  }
+
+  /* Gradient backgrounds for stat cards */
+  .stat-card-last {
+    background: linear-gradient(135deg, hsl(210 67% 98%) 0%, hsl(210 67% 96%) 100%);
+    border-color: hsl(210 67% 85%);
+  }
+  
+  .dark .stat-card-last {
+    background: linear-gradient(135deg, hsl(210 67% 18%) 0%, hsl(210 67% 15%) 100%);
+    border-color: hsl(210 67% 25%);
+  }
+
+  .stat-card-median {
+    background: linear-gradient(135deg, hsl(260 60% 98%) 0%, hsl(260 60% 96%) 100%);
+    border-color: hsl(260 60% 85%);
+  }
+  
+  .dark .stat-card-median {
+    background: linear-gradient(135deg, hsl(260 60% 18%) 0%, hsl(260 60% 15%) 100%);
+    border-color: hsl(260 60% 25%);
+  }
+
+  .stat-card-change {
+    background: linear-gradient(135deg, hsl(146 57% 98%) 0%, hsl(146 57% 96%) 100%);
+    border-color: hsl(146 57% 85%);
+  }
+  
+  .dark .stat-card-change {
+    background: linear-gradient(135deg, hsl(146 57% 18%) 0%, hsl(146 57% 15%) 100%);
+    border-color: hsl(146 57% 25%);
+  }
+
+  /* Enhanced primary button (Start Reset) */
+  .primary-cta {
+    background: linear-gradient(135deg, hsl(210 67% 58%) 0%, hsl(260 60% 65%) 100%);
+    box-shadow: 0 10px 25px -5px hsl(210 67% 58% / 0.3);
+  }
+  
+  .primary-cta:hover {
+    background: linear-gradient(135deg, hsl(210 67% 52%) 0%, hsl(260 60% 58%) 100%);
+    box-shadow: 0 15px 35px -5px hsl(210 67% 58% / 0.4);
+    transform: translateY(-2px);
+  }
+
+  /* Lane cards with distinct colors */
+  .lane-card-ground {
+    background: linear-gradient(135deg, hsl(30 45% 97%) 0%, hsl(30 45% 95%) 100%);
+    border-left: 4px solid hsl(30 45% 55%);
+  }
+  
+  .dark .lane-card-ground {
+    background: linear-gradient(135deg, hsl(30 45% 18%) 0%, hsl(30 45% 15%) 100%);
+    border-left: 4px solid hsl(30 45% 60%);
+  }
+
+  .lane-card-reframe {
+    background: linear-gradient(135deg, hsl(260 60% 97%) 0%, hsl(260 60% 95%) 100%);
+    border-left: 4px solid hsl(260 60% 65%);
+  }
+  
+  .dark .lane-card-reframe {
+    background: linear-gradient(135deg, hsl(260 60% 18%) 0%, hsl(260 60% 15%) 100%);
+    border-left: 4px solid hsl(260 60% 70%);
+  }
+
+  .lane-card-act {
+    background: linear-gradient(135deg, hsl(175 60% 97%) 0%, hsl(175 60% 95%) 100%);
+    border-left: 4px solid hsl(175 60% 55%);
+  }
+  
+  .dark .lane-card-act {
+    background: linear-gradient(135deg, hsl(175 60% 18%) 0%, hsl(175 60% 15%) 100%);
+    border-left: 4px solid hsl(175 60% 60%);
+  }
+
+  /* Pulse animation for live indicators */
+  @keyframes pulse-soft {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+
+  .pulse-indicator {
+    animation: pulse-soft 2s ease-in-out infinite;
+  }
+
+  /* Smooth number transitions for stats */
+  .stat-number {
+    @apply tabular-nums;
+    transition: all 0.3s ease;
+  }
+
+  /* Enhanced sparkline card */
+  .sparkline-card {
+    background: linear-gradient(135deg, hsl(210 25% 98%) 0%, hsl(210 25% 96%) 100%);
+  }
+  
+  .dark .sparkline-card {
+    background: linear-gradient(135deg, hsl(215 25% 18%) 0%, hsl(215 25% 15%) 100%);
+  }
+
+  /* Success state colors for fast recovery times */
+  .success-text {
+    color: hsl(146 57% 45%);
+    font-weight: 600;
+  }
+  
+  .dark .success-text {
+    color: hsl(146 57% 65%);
+  }
+
+  /* Warning state for slower times */
+  .warning-text {
+    color: hsl(28 87% 50%);
+    font-weight: 600;
+  }
+  
+  .dark .warning-text {
+    color: hsl(28 87% 65%);
+  }
+
+  /* Smooth scroll behavior */
+  html {
+    scroll-behavior: smooth;
+  }
+
+  /* Better focus states for accessibility */
+  button:focus-visible,
+  a:focus-visible {
+    outline: 2px solid hsl(210 67% 58%);
+    outline-offset: 2px;
+  }
+
+  /* Icon animations */
+  .icon-bounce:hover {
+    animation: bounce 0.5s ease;
+  }
+
+  @keyframes bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-5px); }
+  }
+
+  /* Glassmorphism effect for certain cards */
+  .glass-effect {
+    background: hsl(0 0% 100% / 0.8);
+    backdrop-filter: blur(10px);
+    border: 1px solid hsl(0 0% 100% / 0.2);
+  }
+  
+  .dark .glass-effect {
+    background: hsl(215 25% 16% / 0.8);
+    backdrop-filter: blur(10px);
+    border: 1px solid hsl(215 25% 30% / 0.2);
+  }
+
+  /* Better spacing and rhythm */
+  .section-spacing {
+    @apply space-y-6;
+  }
+}
