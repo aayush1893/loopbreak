@@ -1,0 +1,10 @@
+preferred-citation:
+  type: software
+  title: "LoopBreak (RRT) — v1.0.0"
+  authors:
+    - family-names: Sisodia
+      given-names: Aayush
+      orcid: "https://orcid.org/0009-0005-7889-3763"
+  version: "1.0.0"
+  date-released: "2025-11-16"
+  doi: "10.5281/zenodo.17625648"
