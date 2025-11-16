@@ -10,7 +10,7 @@ Stop rumination loops in 3 taps. Track your RRT.
 
 🔗 Live Demo: calm-loop-break.lovable.app  
 🌐 Main: loopbreak.vercel.app  
-📚 Prior Art Publication: [Pending Zenodo upload]
+📚 Prior Art Publication: https://doi.org/10.5281/zenodo.17625648
 
 ## What is LoopBreak?
 LoopBreak is a privacy-first web app that helps you measure and shorten your Rumination Recovery Time (RRT)—the seconds between when you notice yourself spiraling and when you feel calm again.
@@ -240,8 +240,11 @@ v2.0 (Future)
 
 This system is documented in a defensive publication establishing prior art:
 
-Citation:
-Sisodia, A. (2025). LoopBreak: A Micro-Intervention System for Reducing Rumination Recovery Time (RRT) Through Grounding, Cognitive Reframing, and Behavioral Activation. Zenodo — DOI pending.
+### 📌 Citation
+If you use LoopBreak in research, please cite:
+
+**Sisodia, A. (2025). LoopBreak: A Micro-Intervention System for Measuring Rumination Recovery Time (RRT). Zenodo. https://doi.org/10.5281/zenodo.17625648**
+
 
 Key References
 
