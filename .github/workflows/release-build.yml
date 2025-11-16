@@ -1,0 +1,40 @@
+
+name: Build and Attach Release Artifact
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build project
+        run: npm run build
+
+      - name: Create zip archive
+        run: |
+          cd dist
+          zip -r ../loopbreak-v${{ github.event.release.tag_name }}.zip .
+
+      - name: Upload release asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_path: ./loopbreak-v${{ github.event.release.tag_name }}.zip
+          asset_name: loopbreak-v${{ github.event.release.tag_name }}.zip
+          asset_content_type: application/zip
