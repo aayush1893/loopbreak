@@ -2,27 +2,20 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { promptInstall } from '@/lib/pwa';
 import { getAllReceipts, downloadCSV, downloadJSON } from '@/lib/db';
 import { calculateStats } from '@/lib/stats';
 import { formatTime } from '@/lib/timer';
 import { Sparkline } from '@/components/Sparkline';
-import { Play, Download, FileDown, TrendingDown, TrendingUp, Minus, BookOpen } from 'lucide-react';
+import { Play, FileDown, TrendingDown, TrendingUp, Minus, BookOpen } from 'lucide-react';
 import type { ResetSession } from '@/types/calm-receipt';
 
 export default function Home() {
   const navigate = useNavigate();
-  const [canInstall, setCanInstall] = useState(false);
   const [sessions, setSessions] = useState<ResetSession[]>([]);
   const [stats, setStats] = useState<ReturnType<typeof calculateStats> | null>(null);
 
   useEffect(() => {
-    const isInstalled = window.matchMedia('(display-mode: standalone)').matches;
-    const handler = () => setCanInstall(true);
-    window.addEventListener('beforeinstallprompt', handler);
-    if (!isInstalled) setCanInstall(true);
     loadSessions();
-    return () => window.removeEventListener('beforeinstallprompt', handler);
   }, []);
 
   const loadSessions = async () => {
@@ -33,11 +26,6 @@ export default function Home() {
     } catch (error) {
       console.error('Error loading sessions:', error);
     }
-  };
-
-  const handleInstall = async () => {
-    const installed = await promptInstall();
-    if (installed) setCanInstall(false);
   };
 
   const handleExportCSV = () => {
@@ -58,13 +46,13 @@ export default function Home() {
     <div className="min-h-screen bg-background flex flex-col">
       <div className="flex-1 container mx-auto max-w-2xl px-4 py-8 space-y-6">
         {/* Header */}
-        <div className="text-center space-y-2">
+        <header className="text-center space-y-2">
           <h1 className="text-3xl font-bold tracking-tight">LoopBreak</h1>
           <p className="text-sm text-muted-foreground">Train your time-to-calm</p>
-        </div>
+        </header>
 
         {/* Metric Tiles */}
-        <div className="grid grid-cols-3 gap-3">
+        <section aria-label="Statistics" className="grid grid-cols-3 gap-3">
           <Card className="p-4 text-center">
             <div className="text-xs text-muted-foreground mb-1">Last tₘ</div>
             <div className="text-2xl font-bold tabular-nums">
@@ -90,7 +78,7 @@ export default function Home() {
                 : '—'}
             </div>
           </Card>
-        </div>
+        </section>
 
         {/* Sparkline */}
         {stats && stats.sparklineData.length > 0 && (
@@ -112,8 +100,9 @@ export default function Home() {
           size="xl" 
           className="w-full h-20 text-xl shadow-lg hover:shadow-xl transition-shadow" 
           onClick={() => navigate('/reset')}
+          aria-label="Start a reset session"
         >
-          <Play className="mr-3 h-7 w-7" />
+          <Play className="mr-3 h-7 w-7" aria-hidden="true" />
           Start Reset
         </Button>
 
@@ -123,29 +112,23 @@ export default function Home() {
           variant="outline" 
           className="w-full" 
           onClick={() => navigate('/tutorial')}
+          aria-label="Learn how to use LoopBreak"
         >
-          <BookOpen className="mr-2 h-5 w-5" />
+          <BookOpen className="mr-2 h-5 w-5" aria-hidden="true" />
           How to Use LoopBreak
         </Button>
 
-        {/* Export & Install */}
+        {/* Export */}
         <div className="grid grid-cols-2 gap-3">
-          <Button size="sm" variant="outline" onClick={handleExportCSV}>
-            <FileDown className="mr-2 h-4 w-4" />
+          <Button size="sm" variant="outline" onClick={handleExportCSV} aria-label="Export data as CSV">
+            <FileDown className="mr-2 h-4 w-4" aria-hidden="true" />
             Export CSV
           </Button>
-          <Button size="sm" variant="outline" onClick={handleExportJSON}>
-            <FileDown className="mr-2 h-4 w-4" />
+          <Button size="sm" variant="outline" onClick={handleExportJSON} aria-label="Export data as JSON">
+            <FileDown className="mr-2 h-4 w-4" aria-hidden="true" />
             Export JSON
           </Button>
         </div>
-
-        {canInstall && (
-          <Button size="lg" variant="outline" className="w-full" onClick={handleInstall}>
-            <Download className="mr-3" />
-            Install App
-          </Button>
-        )}
       </div>
 
       {/* Footer */}
